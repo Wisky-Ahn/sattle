@@ -1,0 +1,162 @@
+import { NextRequest, NextResponse } from "next/server";
+import { supabase } from "@/lib/supabase";
+import { exec } from "child_process";
+import { promisify } from "util";
+import { readFile, writeFile, mkdtemp, rm } from "fs/promises";
+import path from "path";
+import os from "os";
+
+export const runtime = "nodejs";
+const execAsync = promisify(exec);
+
+// GET /api/download?spec_id=xxx&install_id=yyy
+// 베이스 DMG에 학생별 config.json을 주입한 새 DMG를 동적으로 생성하여 반환
+export async function GET(request: NextRequest) {
+  const specId = request.nextUrl.searchParams.get("spec_id");
+  const installId = request.nextUrl.searchParams.get("install_id");
+
+  if (!specId) {
+    return NextResponse.json({ error: "spec_id required" }, { status: 400 });
+  }
+
+  let tmpDir: string | null = null;
+
+  try {
+    const { data: spec, error } = await supabase
+      .from("specs")
+      .select("*")
+      .eq("id", specId)
+      .single();
+
+    if (error || !spec) {
+      return NextResponse.json({ error: "spec not found" }, { status: 404 });
+    }
+
+    // Host 헤더 기반으로 실제 접속 가능한 URL 구성
+    const host = request.headers.get("host") ?? request.nextUrl.host;
+    const protocol = request.headers.get("x-forwarded-proto") ?? "http";
+    const apiBaseUrl = process.env.NEXT_PUBLIC_APP_URL ?? `${protocol}://${host}`;
+
+    const config = {
+      spec_id: specId,
+      install_id: installId ?? "",
+      api_base_url: apiBaseUrl,
+      title: spec.title,
+      framework: spec.framework,
+      spec_content: spec.spec_content,
+    };
+
+    // 임시 작업 디렉토리
+    tmpDir = await mkdtemp(path.join(os.tmpdir(), "sattle-dmg-"));
+    const stagingDir = path.join(tmpDir, "staging");
+    await execAsync(`mkdir -p "${stagingDir}"`);
+
+    // 1. 베이스 DMG 마운트 (빌드 아티팩트 파일명은 DevSetup.dmg 유지)
+    const baseDmg = path.join(process.cwd(), "public", "DevSetup.dmg");
+    const { stdout: mountOutput } = await execAsync(
+      `hdiutil attach "${baseDmg}" -nobrowse -noverify -noautoopen`
+    );
+    const volumeMatch = mountOutput.match(/(\/Volumes\/[^\n]+)/);
+    if (!volumeMatch) throw new Error("DMG 마운트 실패");
+    const volumePath = volumeMatch[1].trim();
+
+    try {
+      // 2. 앱 번들을 hidden 이름으로 복사 (.sattle.app)
+      await execAsync(`cp -R "${volumePath}/DevSetup.app" "${stagingDir}/.sattle.app"`);
+    } finally {
+      // 3. 베이스 DMG detach
+      await execAsync(`hdiutil detach "${volumePath}" -force 2>/dev/null || true`);
+    }
+
+    // 4. config.json도 숨김 파일로 주입
+    await writeFile(
+      path.join(stagingDir, ".sattle-config.json"),
+      JSON.stringify(config, null, 2)
+    );
+
+    // 5. 메인 실행 파일: "sattle 설치.command" — 학생이 보는 유일한 파일
+    const launcherCommand = `#!/bin/bash
+# sattle 자동 실행 스크립트
+# 학생은 이 파일만 더블클릭하면 됩니다
+clear
+echo ""
+echo "  ╔══════════════════════════════════════╗"
+echo "  ║   🛠️  sattle 환경 자동 세팅           ║"
+echo "  ╚══════════════════════════════════════╝"
+echo ""
+echo "  잠시만 기다려주세요..."
+echo ""
+
+# 스크립트가 있는 디렉토리로 이동
+cd "$(dirname "$0")"
+
+# Hidden 앱 번들과 config 파일 위치
+APP_PATH=".sattle.app"
+CONFIG_PATH=".sattle-config.json"
+
+if [ ! -d "$APP_PATH" ]; then
+    echo "  ❌ 앱 파일을 찾을 수 없습니다."
+    echo "  DMG를 다시 다운로드해주세요."
+    read -p "아무 키나 누르면 종료합니다..."
+    exit 1
+fi
+
+# Quarantine 속성 제거
+xattr -cr "$APP_PATH" 2>/dev/null || true
+
+# DMG는 read-only이므로 임시 위치에 복사 후 실행
+TEMP_DIR="$HOME/.sattle-temp"
+rm -rf "$TEMP_DIR"
+mkdir -p "$TEMP_DIR"
+
+cp -R "$APP_PATH" "$TEMP_DIR/sattle.app"
+# 앱이 찾는 config 파일 이름(devsetup-config.json)으로도 저장
+cp "$CONFIG_PATH" "$TEMP_DIR/devsetup-config.json"
+cp "$CONFIG_PATH" "$TEMP_DIR/sattle-config.json"
+xattr -cr "$TEMP_DIR/sattle.app" 2>/dev/null || true
+
+echo "  ✓ 준비 완료"
+echo ""
+
+# 앱 실행
+open "$TEMP_DIR/sattle.app"
+
+# 터미널 창 닫기
+osascript -e 'tell application "Terminal" to close (every window whose name contains "sattle")' 2>/dev/null &
+exit 0
+`;
+    await writeFile(
+      path.join(stagingDir, "sattle 설치.command"),
+      launcherCommand
+    );
+    await execAsync(`chmod +x "${stagingDir}/sattle 설치.command"`);
+
+    // 6. 숨김 파일 처리 (.으로 시작하는 파일은 Finder에서 자동 숨김)
+
+    // 7. 새 DMG 생성 (볼륨명: sattle)
+    const outputDmg = path.join(tmpDir, "sattle.dmg");
+    await execAsync(
+      `hdiutil create -volname "sattle" -srcfolder "${stagingDir}" -ov -format UDZO "${outputDmg}"`
+    );
+
+    // 8. DMG 파일 읽기
+    const dmgBuffer = await readFile(outputDmg);
+
+    return new Response(dmgBuffer, {
+      headers: {
+        "Content-Type": "application/x-apple-diskimage",
+        "Content-Disposition": `attachment; filename="sattle.dmg"`,
+        "Content-Length": String(dmgBuffer.length),
+      },
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Unknown error";
+    console.error("Download error:", msg);
+    return NextResponse.json({ error: msg }, { status: 500 });
+  } finally {
+    // 임시 디렉토리 정리
+    if (tmpDir) {
+      await rm(tmpDir, { recursive: true, force: true }).catch(() => {});
+    }
+  }
+}
