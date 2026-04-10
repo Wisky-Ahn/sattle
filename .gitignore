@@ -1,0 +1,155 @@
+# ===========================
+# macOS
+# ===========================
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# ===========================
+# Environment variables / Secrets
+# ===========================
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.pem
+*.key
+
+# ===========================
+# Node.js / Next.js
+# ===========================
+node_modules/
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+.vercel
+
+# npm/yarn/pnpm
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.pnpm-store/
+
+# Turbopack
+.turbo
+
+# ===========================
+# Swift / Xcode / macOS Build
+# ===========================
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+*.xcodeproj/
+*.xcworkspace/
+xcuserdata/
+*.xcuserstate
+
+# Build artifacts
+*.o
+*.a
+*.dylib
+*.app/
+*.dSYM/
+!*.app.md
+
+# DMG build outputs
+installer/DevSetup/dist/
+installer/DevSetup/.build/
+installer/DevSetup/.build-app/
+
+# Installer web public DMG (재빌드 가능)
+web/public/DevSetup.dmg
+web/public/DevSetup.app/
+web/public/sattle.dmg
+web/public/sattle.app/
+
+# ===========================
+# IDE / Editor
+# ===========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# ===========================
+# Logs
+# ===========================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ===========================
+# Test output / Screenshots
+# ===========================
+.playwright-mcp/
+playwright-report/
+test-results/
+coverage/
+*.png
+*.jpg
+*.jpeg
+*.heic
+*.HEIC
+!docs/**/*.png
+!docs/**/*.jpg
+
+# Test downloads
+/tmp/devsetup-*
+~/Downloads/devsetup-test/
+
+# ===========================
+# Python (있을 경우)
+# ===========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+venv/
+.venv/
+
+# ===========================
+# Java / Gradle (테스트 프로젝트)
+# ===========================
+*.class
+*.jar
+.gradle/
+build/
+bin/
+
+# ===========================
+# Temporary / Cache
+# ===========================
+*.tmp
+*.bak
+*.cache
+.cache/
+tmp/
+temp/
+
+# ===========================
+# Claude Code & MCP settings (개인 설정)
+# ===========================
+.claude/settings.local.json
+.mcp.json
