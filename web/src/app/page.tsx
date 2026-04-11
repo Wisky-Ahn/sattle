@@ -2,6 +2,10 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
+import { createSupabaseBrowser } from "@/lib/supabase-browser";
+import type { User } from "@supabase/supabase-js";
+import SiteHeader from "@/components/SiteHeader";
 
 // --- Animation Wrapper (Safari 호환: whileInView 사용) ---
 function FadeIn({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
@@ -48,22 +52,24 @@ function ScaleIn({ children, className = "", delay = 0 }: { children: React.Reac
 }
 
 export default function LandingPage() {
+  const [user, setUser] = useState<User | null>(null);
+  const [authReady, setAuthReady] = useState(false);
+
+  useEffect(() => {
+    const supabase = createSupabaseBrowser();
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user);
+      setAuthReady(true);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-950 text-white overflow-x-hidden">
-      {/* ====== Header ====== */}
-      <header className="fixed top-0 w-full z-50 bg-gray-950/80 backdrop-blur-md border-b border-gray-800/50">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="text-xl font-bold tracking-tight">sattle</Link>
-          <div className="flex items-center gap-3">
-            <Link href="/demo" className="px-4 py-2 text-sm text-gray-400 hover:text-white transition">
-              학생 입장
-            </Link>
-            <Link href="/login" className="px-4 py-2 text-sm bg-white/10 hover:bg-white/15 rounded-lg transition">
-              강사 로그인
-            </Link>
-          </div>
-        </div>
-      </header>
+      <SiteHeader />
 
       {/* ====== Hero ====== */}
       <section className="pt-32 pb-20 px-6">
@@ -99,7 +105,7 @@ export default function LandingPage() {
                 학생 설치 시작하기
               </Link>
               <Link
-                href="/login"
+                href={authReady && user ? "/instructor" : "/login?next=/instructor"}
                 className="px-8 py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-lg font-medium transition"
               >
                 강사 대시보드
@@ -304,7 +310,7 @@ export default function LandingPage() {
                 학생 설치 시작하기
               </Link>
               <Link
-                href="/login"
+                href={authReady && user ? "/instructor" : "/login?next=/instructor"}
                 className="px-8 py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-lg font-medium transition"
               >
                 강사 대시보드

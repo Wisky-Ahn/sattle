@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { uuidv4 } from "@/lib/uuid";
 import type { Spec, Installation } from "@/lib/database.types";
+import SiteHeader from "@/components/SiteHeader";
 
 type InstallStep = {
   name: string;
@@ -128,14 +128,9 @@ export default function StudentPage() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
-      <header className="border-b border-gray-700 px-6 py-4">
-        <div className="max-w-3xl mx-auto flex items-center justify-between">
-          <Link href="/" className="text-xl font-bold">sattle</Link>
-          <span className="text-gray-400">학생</span>
-        </div>
-      </header>
+      <SiteHeader maxWidthClass="max-w-3xl" />
 
-      <div className="max-w-3xl mx-auto px-6 py-8">
+      <div className="max-w-3xl mx-auto px-6 pt-24 pb-8">
         {!installing ? (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold">설치 가능한 환경</h2>

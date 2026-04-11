@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import type { Installation } from "@/lib/database.types";
 import type { SetupTool } from "@/lib/database.types";
+import SiteHeader from "@/components/SiteHeader";
 
 type ParseResult = {
   title: string;
@@ -163,17 +163,7 @@ export default function InstructorPage() {
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
-      {/* Header */}
-      <header className="fixed top-0 w-full z-50 bg-gray-950/80 backdrop-blur-md border-b border-gray-800/50">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="text-xl font-bold tracking-tight">sattle</Link>
-          <div className="flex items-center gap-3">
-            <span className="px-3 py-1 text-xs bg-blue-500/10 border border-blue-500/20 rounded-full text-blue-400">
-              강사 대시보드
-            </span>
-          </div>
-        </div>
-      </header>
+      <SiteHeader />
 
       <div className="pt-28 pb-20 px-6">
         <div className="max-w-5xl mx-auto">

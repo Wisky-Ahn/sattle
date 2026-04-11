@@ -1,12 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import SiteHeader from "@/components/SiteHeader";
+import { createSupabaseBrowser } from "@/lib/supabase-browser";
+import type { User } from "@supabase/supabase-js";
 
 export default function DemoPage() {
   const [code, setCode] = useState("");
+  const [user, setUser] = useState<User | null>(null);
+  const [authReady, setAuthReady] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    const supabase = createSupabaseBrowser();
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user);
+      setAuthReady(true);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
 
   const handleJoin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -16,20 +33,7 @@ export default function DemoPage() {
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
-      {/* Header */}
-      <header className="fixed top-0 w-full z-50 bg-gray-950/80 backdrop-blur-md border-b border-gray-800/50">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="text-xl font-bold tracking-tight">sattle</Link>
-          <div className="flex items-center gap-3">
-            <Link href="/" className="px-4 py-2 text-sm text-gray-400 hover:text-white transition">
-              홈
-            </Link>
-            <Link href="/login" className="px-4 py-2 text-sm bg-white/10 hover:bg-white/15 rounded-lg transition">
-              로그인
-            </Link>
-          </div>
-        </div>
-      </header>
+      <SiteHeader showStudentLink={false} />
 
       {/* Main */}
       <div className="pt-32 pb-20 px-6">
@@ -82,7 +86,7 @@ export default function DemoPage() {
           {/* 강사 링크 */}
           <div className="space-y-3">
             <Link
-              href="/instructor"
+              href={authReady && user ? "/instructor" : "/login?next=/instructor"}
               className="inline-block px-8 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl font-medium transition"
             >
               강사 대시보드
