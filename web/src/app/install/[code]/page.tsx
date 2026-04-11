@@ -3,6 +3,7 @@
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import SiteHeader from "@/components/SiteHeader";
 import { uuidv4 } from "@/lib/uuid";
 import type { Spec } from "@/lib/database.types";
 
@@ -120,12 +121,10 @@ export default function InstallPage({ params }: { params: Promise<{ code: string
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
-      <header className="fixed top-0 w-full z-50 bg-gray-950/80 backdrop-blur-md border-b border-gray-800/50">
-        <div className="max-w-2xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="text-xl font-bold tracking-tight">sattle</Link>
-          <span className="text-sm text-gray-500 font-mono">{code}</span>
-        </div>
-      </header>
+      <SiteHeader
+        maxWidthClass="max-w-2xl"
+        rightExtra={<span className="text-sm text-gray-500 font-mono">{code}</span>}
+      />
 
       <div className="pt-32 pb-20 px-6">
         <div className="max-w-2xl mx-auto text-center space-y-8">
@@ -192,10 +191,6 @@ export default function InstallPage({ params }: { params: Promise<{ code: string
               <div className="space-y-2">
                 <div className="text-sm text-blue-400">{studentName}님, 환영합니다!</div>
                 <h2 className="text-xl font-semibold">환경 자동 세팅</h2>
-                <p className="text-gray-400 text-sm">
-                  DMG 파일을 다운로드하고 더블클릭하면<br/>
-                  자동으로 환경이 설치됩니다.
-                </p>
               </div>
 
               <button
@@ -206,7 +201,44 @@ export default function InstallPage({ params }: { params: Promise<{ code: string
                 {downloading ? "준비 중..." : "다운로드"}
               </button>
 
-              <div className="text-xs text-gray-500 space-y-1">
+              {/* 실행 가이드 — 강조 */}
+              <div className="bg-gradient-to-br from-yellow-500/10 to-transparent border border-yellow-500/30 rounded-xl p-5 space-y-4 text-left">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">⚠️</span>
+                  <div className="font-semibold text-yellow-400">
+                    다운로드 후 실행 방법
+                  </div>
+                </div>
+
+                <ol className="space-y-3">
+                  <li className="flex gap-3">
+                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-yellow-500/20 text-yellow-400 flex items-center justify-center text-xs font-bold">1</span>
+                    <div className="flex-1 text-sm text-gray-300 pt-0.5">
+                      다운로드된 <code className="px-1.5 py-0.5 bg-white/10 rounded text-white font-mono text-xs">sattle.zip</code>이 자동으로 압축 해제되면 폴더가 생깁니다
+                    </div>
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-yellow-500/20 text-yellow-400 flex items-center justify-center text-xs font-bold">2</span>
+                    <div className="flex-1 text-sm text-gray-300 pt-0.5">
+                      폴더 안의{" "}
+                      <code className="px-1.5 py-0.5 bg-yellow-500/20 border border-yellow-500/40 rounded text-yellow-300 font-mono text-xs font-bold whitespace-nowrap">
+                        sattle 설치.command
+                      </code>{" "}
+                      파일을 <span className="text-white font-semibold">더블클릭</span>하세요
+                    </div>
+                  </li>
+                </ol>
+
+                <div className="flex items-start gap-2 pt-2 border-t border-yellow-500/20">
+                  <span className="text-red-400 text-sm">❌</span>
+                  <div className="text-xs text-gray-400 leading-relaxed">
+                    다른 파일을 실행하면 설치가 동작하지 않습니다.{" "}
+                    <span className="text-yellow-300 font-semibold">반드시 .command 파일</span>을 실행해주세요.
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-xs text-gray-500 space-y-1 pt-2">
                 <div>macOS 14.0 이상 지원</div>
                 <div>설치 완료 후 앱은 자동으로 삭제됩니다</div>
               </div>
