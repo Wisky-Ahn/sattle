@@ -1,55 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { createSupabaseBrowser } from "@/lib/supabase-browser";
 import type { User } from "@supabase/supabase-js";
 import SiteHeader from "@/components/SiteHeader";
-
-// --- Animation Wrapper (Safari 호환: whileInView 사용) ---
-function FadeIn({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 40 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.1 }}
-      transition={{ duration: 0.6, delay, ease: "easeOut" }}
-      className={className}
-    >
-      {children}
-    </motion.div>
-  );
-}
-
-function SlideIn({ children, className = "", direction = "left", delay = 0 }: { children: React.ReactNode; className?: string; direction?: "left" | "right"; delay?: number }) {
-  const x = direction === "left" ? -60 : 60;
-  return (
-    <motion.div
-      initial={{ opacity: 0, x }}
-      whileInView={{ opacity: 1, x: 0 }}
-      viewport={{ once: true, amount: 0.1 }}
-      transition={{ duration: 0.6, delay, ease: "easeOut" }}
-      className={className}
-    >
-      {children}
-    </motion.div>
-  );
-}
-
-function ScaleIn({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.85 }}
-      whileInView={{ opacity: 1, scale: 1 }}
-      viewport={{ once: true, amount: 0.1 }}
-      transition={{ duration: 0.5, delay, ease: "easeOut" }}
-      className={className}
-    >
-      {children}
-    </motion.div>
-  );
-}
+import { FadeIn, FlipIn, SlideIn, ScaleIn } from "@/components/Animations";
 
 export default function LandingPage() {
   const [user, setUser] = useState<User | null>(null);
@@ -72,43 +28,47 @@ export default function LandingPage() {
       <SiteHeader />
 
       {/* ====== Hero ====== */}
-      <section className="pt-32 pb-20 px-6">
-        <div className="max-w-4xl mx-auto text-center">
+      <section className="relative pt-36 pb-24 px-6 overflow-hidden">
+        {/* 배경 글로우 */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-blue-500/[0.07] rounded-full blur-[120px] pointer-events-none" />
+
+        <div className="relative max-w-4xl mx-auto text-center">
           <FadeIn>
-            <div className="inline-block px-4 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full text-sm text-blue-400 mb-6">
+            <div className="inline-block px-4 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full text-sm text-blue-400 mb-8">
               개발 교육을 위한 환경 자동화
             </div>
           </FadeIn>
 
-          <FadeIn delay={0.1}>
-            <h1 className="text-5xl md:text-6xl font-bold leading-tight tracking-tight">
+          <FlipIn delay={0.15}>
+            <h1 className="text-5xl md:text-7xl font-bold leading-[1.1] tracking-tight">
               개발 환경 세팅,<br />
-              <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-400 bg-[length:200%_auto] animate-[gradient_3s_linear_infinite] bg-clip-text text-transparent">
                 더 이상 설명하지 마세요
               </span>
             </h1>
-          </FadeIn>
+          </FlipIn>
 
-          <FadeIn delay={0.2}>
-            <p className="mt-6 text-lg md:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
+          <FadeIn delay={0.4}>
+            <p className="mt-8 text-lg md:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
               원클릭으로 모든 학생의 개발 환경을 동일하게 맞춥니다.<br />
               강사는 명세만 설정하고, 학생은 클릭 한 번으로 바로 시작합니다.
             </p>
           </FadeIn>
 
-          <FadeIn delay={0.3}>
-            <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
+          <FadeIn delay={0.55}>
+            <div className="mt-10 flex flex-col items-center gap-5">
               <Link
                 href="/demo"
-                className="px-8 py-4 bg-blue-600 hover:bg-blue-700 rounded-xl text-lg font-semibold transition shadow-lg shadow-blue-600/20"
+                className="group relative px-10 py-4 bg-blue-600 hover:bg-blue-500 rounded-xl text-lg font-semibold transition-all shadow-lg shadow-blue-600/25 hover:shadow-blue-500/40 hover:scale-[1.02]"
               >
-                학생 설치 시작하기
+                지금 시작하기
+                <span className="ml-2 inline-block transition-transform group-hover:translate-x-1">&rarr;</span>
               </Link>
               <Link
                 href={authReady && user ? "/instructor" : "/login?next=/instructor"}
-                className="px-8 py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-lg font-medium transition"
+                className="text-sm text-gray-500 hover:text-gray-300 transition"
               >
-                강사 대시보드
+                강사이신가요? <span className="underline underline-offset-4">대시보드로 이동</span>
               </Link>
             </div>
           </FadeIn>
@@ -290,8 +250,9 @@ export default function LandingPage() {
       </section>
 
       {/* ====== CTA ====== */}
-      <section className="py-24 px-6 bg-gradient-to-b from-gray-900/50 to-gray-950">
-        <div className="max-w-3xl mx-auto text-center">
+      <section className="relative py-24 px-6 bg-gradient-to-b from-gray-900/50 to-gray-950 overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-blue-500/[0.05] rounded-full blur-[100px] pointer-events-none" />
+        <div className="relative max-w-3xl mx-auto text-center">
           <FadeIn>
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
               지금 바로 시작해보세요
@@ -302,18 +263,19 @@ export default function LandingPage() {
           </FadeIn>
 
           <FadeIn delay={0.2}>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col items-center gap-5">
               <Link
                 href="/demo"
-                className="px-8 py-4 bg-blue-600 hover:bg-blue-700 rounded-xl text-lg font-semibold transition shadow-lg shadow-blue-600/20"
+                className="group px-10 py-4 bg-blue-600 hover:bg-blue-500 rounded-xl text-lg font-semibold transition-all shadow-lg shadow-blue-600/25 hover:shadow-blue-500/40 hover:scale-[1.02]"
               >
-                학생 설치 시작하기
+                지금 시작하기
+                <span className="ml-2 inline-block transition-transform group-hover:translate-x-1">&rarr;</span>
               </Link>
               <Link
                 href={authReady && user ? "/instructor" : "/login?next=/instructor"}
-                className="px-8 py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-lg font-medium transition"
+                className="text-sm text-gray-500 hover:text-gray-300 transition"
               >
-                강사 대시보드
+                강사이신가요? <span className="underline underline-offset-4">대시보드로 이동</span>
               </Link>
             </div>
           </FadeIn>
