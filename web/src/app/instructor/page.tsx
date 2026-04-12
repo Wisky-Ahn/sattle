@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import type { Installation } from "@/lib/database.types";
 import type { SetupTool } from "@/lib/database.types";
 import SiteHeader from "@/components/SiteHeader";
+import { FadeIn, FlipIn, RiseIn, ScaleIn } from "@/components/Animations";
 
 type ParseResult = {
   title: string;
@@ -162,12 +163,16 @@ export default function InstructorPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
+    <div className="min-h-screen bg-gray-950 text-white overflow-hidden">
       <SiteHeader />
 
-      <div className="pt-28 pb-20 px-6">
-        <div className="max-w-5xl mx-auto">
+      <div className="relative pt-28 pb-20 px-6">
+        {/* 배경 글로우 */}
+        <div className="absolute top-0 right-0 w-[500px] h-[400px] bg-blue-500/[0.04] rounded-full blur-[120px] pointer-events-none" />
+
+        <div className="relative max-w-5xl mx-auto">
           {/* 탭 */}
+          <FadeIn>
           <div className="flex gap-1 mb-10 p-1 bg-white/[0.03] border border-white/[0.06] rounded-xl w-fit">
             <button
               onClick={() => setActiveTab("create")}
@@ -190,17 +195,24 @@ export default function InstructorPage() {
               학생 모니터링
             </button>
           </div>
+          </FadeIn>
 
           {activeTab === "create" && (
             <div className="space-y-8">
               <div>
-                <div className="inline-block px-4 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full text-sm text-blue-400 mb-4">
-                  환경 명세 생성
-                </div>
-                <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
-                  수업 계획서를 <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">AI가 분석</span>합니다
-                </h2>
-                <p className="text-gray-400 mt-3">자유 형식으로 작성한 환경 안내문을 입력하세요</p>
+                <FadeIn>
+                  <div className="inline-block px-4 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full text-sm text-blue-400 mb-4">
+                    환경 명세 생성
+                  </div>
+                </FadeIn>
+                <FlipIn delay={0.1}>
+                  <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+                    수업 계획서를 <span className="bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-400 bg-[length:200%_auto] animate-[gradient_3s_linear_infinite] bg-clip-text text-transparent">AI가 분석</span>합니다
+                  </h2>
+                </FlipIn>
+                <FadeIn delay={0.25}>
+                  <p className="text-gray-400 mt-3">자유 형식으로 작성한 환경 안내문을 입력하세요</p>
+                </FadeIn>
               </div>
 
               {/* 입력 영역 */}
@@ -327,13 +339,19 @@ export default function InstructorPage() {
           {activeTab === "monitor" && (
             <div className="space-y-8">
               <div>
-                <div className="inline-block px-4 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full text-sm text-blue-400 mb-4">
-                  실시간 모니터링
-                </div>
-                <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
-                  학생 설치 현황
-                </h2>
-                <p className="text-gray-400 mt-3">모든 학생의 설치 상태를 실시간으로 확인합니다</p>
+                <FadeIn>
+                  <div className="inline-block px-4 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full text-sm text-blue-400 mb-4">
+                    실시간 모니터링
+                  </div>
+                </FadeIn>
+                <FlipIn delay={0.1}>
+                  <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+                    학생 설치 현황
+                  </h2>
+                </FlipIn>
+                <FadeIn delay={0.25}>
+                  <p className="text-gray-400 mt-3">모든 학생의 설치 상태를 실시간으로 확인합니다</p>
+                </FadeIn>
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -342,11 +360,13 @@ export default function InstructorPage() {
                   { label: "완료", count: installations.filter(i => i.status === "success").length, color: "text-green-400", gradient: "from-green-500/10 to-transparent", border: "border-green-500/20" },
                   { label: "진행중", count: installations.filter(i => i.status === "installing").length, color: "text-blue-400", gradient: "from-blue-500/10 to-transparent", border: "border-blue-500/20" },
                   { label: "실패", count: installations.filter(i => i.status === "failed").length, color: "text-red-400", gradient: "from-red-500/10 to-transparent", border: "border-red-500/20" },
-                ].map((stat) => (
-                  <div key={stat.label} className={`p-6 rounded-2xl bg-gradient-to-br ${stat.gradient} border ${stat.border}`}>
+                ].map((stat, i) => (
+                  <ScaleIn key={stat.label} delay={i * 0.08}>
+                  <div className={`p-6 rounded-2xl bg-gradient-to-br ${stat.gradient} border ${stat.border} hover:scale-[1.02] transition-transform`}>
                     <div className={`text-3xl font-bold ${stat.color}`}>{stat.count}</div>
                     <div className="text-sm text-gray-400 mt-1">{stat.label}</div>
                   </div>
+                  </ScaleIn>
                 ))}
               </div>
 
