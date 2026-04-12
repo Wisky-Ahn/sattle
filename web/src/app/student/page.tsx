@@ -47,11 +47,10 @@ export default function StudentPage() {
   }, [installationId]);
 
   const updateStepsFromInstallation = (inst: Installation) => {
-    const totalSteps = inst.total_steps ?? 7;
+    const totalSteps = inst.total_steps ?? 5;
     const currentStep = inst.step ?? 0;
 
-    // 동적 단계명: spec의 tools 기반 or 기본값
-    const defaultNames = ["명세 파싱", "환경 진단", "충돌 정리", "패키지 설치", "프로젝트 생성", "빌드 검증", "결과 보고"];
+    const defaultNames = ["권한 확인", "환경 진단", "AI 에이전트 준비", "환경 세팅 (AI)", "정리"];
     const stepNames = defaultNames.slice(0, totalSteps);
 
     const newSteps: InstallStep[] = stepNames.map((name, i) => {
@@ -83,7 +82,7 @@ export default function StudentPage() {
         student_id: uuidv4(),
         status: "pending",
         step: 0,
-        total_steps: 7,
+        total_steps: 5,
         message: "설치 대기 중",
       })
       .select()

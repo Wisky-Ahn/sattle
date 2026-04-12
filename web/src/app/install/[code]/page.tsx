@@ -5,13 +5,15 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import SiteHeader from "@/components/SiteHeader";
 import { uuidv4 } from "@/lib/uuid";
-import type { Spec } from "@/lib/database.types";
+import type { Spec, Installation } from "@/lib/database.types";
 
 type SetupTool = {
   name: string;
   version?: string;
   category: string;
 };
+
+const STEP_NAMES = ["권한 확인", "환경 진단", "AI 에이전트 준비", "환경 세팅 (AI)", "정리"];
 
 export default function InstallPage({ params }: { params: Promise<{ code: string }> }) {
   const rawCode = use(params).code;
@@ -25,6 +27,7 @@ export default function InstallPage({ params }: { params: Promise<{ code: string
   const [downloading, setDownloading] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [installStatus, setInstallStatus] = useState<Installation | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -40,6 +43,23 @@ export default function InstallPage({ params }: { params: Promise<{ code: string
     }
     load();
   }, [code]);
+
+  // Realtime 구독 — 설치 진행 상태 실시간 반영
+  useEffect(() => {
+    if (!installationId) return;
+    const channel = supabase
+      .channel(`install-progress-${installationId}`)
+      .on("postgres_changes", {
+        event: "UPDATE",
+        schema: "public",
+        table: "installations",
+        filter: `id=eq.${installationId}`,
+      }, (payload) => {
+        setInstallStatus(payload.new as Installation);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [installationId]);
 
   const handleNameSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,7 +77,7 @@ export default function InstallPage({ params }: { params: Promise<{ code: string
           student_name: studentName.trim(),
           status: "pending",
           step: 0,
-          total_steps: 7,
+          total_steps: 5,
           message: "설치 대기 중",
         })
         .select()
@@ -244,16 +264,64 @@ export default function InstallPage({ params }: { params: Promise<{ code: string
             </div>
           )}
 
-          {/* 설치 과정 미리보기 */}
+          {/* 설치 과정 — 실시간 진행 상태 */}
           <div className="text-left space-y-3">
-            <h3 className="text-sm font-medium text-gray-400">설치 과정</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-gray-400">설치 과정</h3>
+              {installStatus && installStatus.status === "installing" && (
+                <span className="text-xs text-blue-400 animate-pulse">실시간 업데이트 중</span>
+              )}
+              {installStatus?.status === "success" && (
+                <span className="text-xs text-green-400">설치 완료</span>
+              )}
+              {installStatus?.status === "failed" && (
+                <span className="text-xs text-red-400">설치 실패</span>
+              )}
+            </div>
             <div className="space-y-2">
-              {["명세 파싱", "환경 진단", "충돌 정리", "패키지 설치", "프로젝트 생성", "빌드 검증", "결과 보고"].map((s, i) => (
-                <div key={i} className="flex items-center gap-3 bg-white/[0.02] border border-white/[0.04] rounded-lg px-4 py-2.5 text-sm">
-                  <span className="text-gray-500 font-mono text-xs w-8">[{i + 1}/7]</span>
-                  <span className="text-gray-400">{s}</span>
-                </div>
-              ))}
+              {STEP_NAMES.map((s, i) => {
+                const stepNum = i + 1;
+                const currentStep = installStatus?.step ?? 0;
+                const status = installStatus?.status;
+
+                let icon = <span className="text-gray-600">○</span>;
+                let textColor = "text-gray-500";
+                let bgClass = "bg-white/[0.02] border-white/[0.04]";
+
+                if (status === "success") {
+                  icon = <span className="text-green-400">✓</span>;
+                  textColor = "text-gray-300";
+                  bgClass = "bg-green-500/5 border-green-500/20";
+                } else if (stepNum < currentStep) {
+                  icon = <span className="text-green-400">✓</span>;
+                  textColor = "text-gray-300";
+                  bgClass = "bg-green-500/5 border-green-500/20";
+                } else if (stepNum === currentStep) {
+                  if (status === "failed") {
+                    icon = <span className="text-red-400">✕</span>;
+                    textColor = "text-red-400";
+                    bgClass = "bg-red-500/10 border-red-500/30";
+                  } else {
+                    icon = <span className="text-blue-400 animate-pulse">●</span>;
+                    textColor = "text-white";
+                    bgClass = "bg-blue-500/10 border-blue-500/30";
+                  }
+                }
+
+                return (
+                  <div key={i} className={`flex items-center gap-3 border rounded-lg px-4 py-2.5 text-sm transition-all ${bgClass}`}>
+                    <span className="w-5 text-center">{icon}</span>
+                    <span className="text-gray-500 font-mono text-xs">[{stepNum}/5]</span>
+                    <span className={textColor}>{s}</span>
+                    {stepNum === currentStep && status === "installing" && installStatus?.message && (
+                      <span className="ml-auto text-xs text-gray-500 truncate max-w-[200px]">{installStatus.message}</span>
+                    )}
+                    {stepNum === currentStep && status === "failed" && installStatus?.message && (
+                      <span className="ml-auto text-xs text-red-400 truncate max-w-[200px]">{installStatus.message}</span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
