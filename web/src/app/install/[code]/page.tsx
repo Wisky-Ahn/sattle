@@ -122,7 +122,6 @@ export default function InstallPage({ params }: { params: Promise<{ code: string
   return (
     <div className="min-h-screen bg-gray-950 text-white">
       <SiteHeader
-        maxWidthClass="max-w-2xl"
         rightExtra={<span className="text-sm text-gray-500 font-mono">{code}</span>}
       />
 

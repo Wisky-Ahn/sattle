@@ -34,7 +34,7 @@ export default function DemoPage() {
 
   return (
     <div className="min-h-screen bg-gray-950 text-white overflow-hidden">
-      <SiteHeader showStudentLink={false} />
+      <SiteHeader />
 
       <div className="relative pt-36 pb-20 px-6">
         {/* 배경 글로우 */}

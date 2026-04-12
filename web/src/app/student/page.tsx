@@ -128,7 +128,7 @@ export default function StudentPage() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
-      <SiteHeader maxWidthClass="max-w-3xl" />
+      <SiteHeader />
 
       <div className="max-w-3xl mx-auto px-6 pt-24 pb-8">
         {!installing ? (
