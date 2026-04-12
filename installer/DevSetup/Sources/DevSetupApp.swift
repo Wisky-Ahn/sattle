@@ -33,6 +33,9 @@ struct DevSetupApp: App {
         if let installId = json["install_id"] as? String {
             installer.installId = installId
         }
+        if let apiKey = json["api_key"] as? String {
+            installer.apiKey = apiKey
+        }
         if let title = json["title"] as? String {
             installer.spec.title = title
         }

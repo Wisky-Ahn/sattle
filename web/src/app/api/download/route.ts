@@ -78,6 +78,7 @@ export async function GET(request: NextRequest) {
       spec_id: specId,
       install_id: installId ?? "",
       api_base_url: apiBaseUrl,
+      api_key: process.env.ANTHROPIC_API_KEY ?? "",
       title: spec.title,
       framework: spec.framework,
       spec_content: spec.spec_content,

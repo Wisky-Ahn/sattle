@@ -68,6 +68,38 @@ struct SuccessView: View {
                         }
                         .padding(20)
 
+                        // 검증 경고
+                        if !vm.verifyWarnings.isEmpty {
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "exclamationmark.triangle.fill")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.yellow)
+                                    Text("검증 경고 \(vm.verifyWarnings.count)건")
+                                        .font(.system(size: 13, weight: .semibold))
+                                        .foregroundColor(.yellow)
+                                }
+                                ForEach(vm.verifyWarnings, id: \.self) { cmd in
+                                    HStack(alignment: .top, spacing: 6) {
+                                        Text("$")
+                                            .font(.system(size: 11, design: .monospaced))
+                                            .foregroundColor(.textSecondary)
+                                        Text(cmd)
+                                            .font(.system(size: 11, design: .monospaced))
+                                            .foregroundColor(.textSecondary)
+                                            .textSelection(.enabled)
+                                    }
+                                }
+                                Text("도구 설치는 완료되었으나 일부 검증 명령이 실패했습니다.\n강사에게 문의하세요.")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(.textSecondary)
+                                    .lineSpacing(2)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(16)
+                            .background(Color.yellow.opacity(0.06))
+                        }
+
                         Divider().background(Color.textSecondary.opacity(0.15))
 
                         Button(action: {
