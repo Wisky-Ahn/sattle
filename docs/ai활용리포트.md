@@ -1,7 +1,7 @@
 # sattle — AI 활용 리포트
 
 > 한국IT아카데미 제출용 — 개발 교육용 환경 세팅 자동화 서비스
-> 작성일: 2026-04-10
+> 작성일: 2026-04-10 · 최종 수정: 2026-04-13
 
 ---
 
@@ -17,7 +17,7 @@
 
 ### 핵심 가치
 - 강사: 명세만 작성하면 AI가 알아서 분석 + 학생 진행 상황 실시간 모니터링
-- 학생: 1개 파일(.dmg) 다운로드 → 클릭 한 번 → 비밀번호 입력 → 끝
+- 학생: 1개 파일(ZIP) 다운로드 → `.command` 클릭 → 비밀번호 입력 → **OpenClaw AI 에이전트가 자율 설치**
 
 ---
 
@@ -27,7 +27,7 @@
 
 **역할**: 강사가 자유 형식으로 작성한 수업 계획서를 읽고, 설치해야 할 도구·언어·프레임워크·패키지·검증 명령을 추출.
 
-**모델**: `claude-sonnet-4-20250514`
+**모델**: `claude-sonnet-4-6`
 
 **입력 예시 (강사)**:
 ```
@@ -100,6 +100,42 @@ Supabase MCP 서버를 통해 Claude Code가 **직접 DB를 운영**:
 - 도구 태그 카테고리별 색상 검증
 - 다운로드 버튼 동작 확인
 - Realtime 모니터링 동기화 확인
+
+### 2-5. OpenClaw — 학생 PC에서 AI 에이전트 자율 설치 ⭐
+
+**역할**: 학생 PC에 설치된 OpenClaw AI 에이전트가 명세 파일을 읽고 **자율적으로** 환경을 구축한다. SwiftUI 앱은 UI와 에이전트 라이프사이클만 관리하고, 실제 설치 로직은 AI가 담당.
+
+**실행 명령**:
+```bash
+openclaw agent --local --agent main \
+  --message "환경 세팅해줘. 명세 파일: /tmp/sattle-spec.md. 실패하면 자동으로 수정 후 재시도해." \
+  --thinking high --timeout 600
+```
+
+**핵심 설계**:
+- `--local` 플래그로 게이트웨이 데몬 없이 내장 모드 실행 (일회성 설치용)
+- `AGENTS.md`에 7단계 실행 절차 + 에러 복구 전략 + macOS 특이사항을 사전 정의
+- `SKILL.md`에 프레임워크별 설치 전략(Spring Boot, Django, React 등) 수록
+- `SETUP_API_URL`, `INSTALL_ID` 환경변수로 강사 대시보드에 진행 상태 자동 보고
+
+**기존 방식(하드코딩)과의 차이**:
+| 항목 | 하드코딩 | OpenClaw |
+|------|---------|----------|
+| 설치 명령 | `brew install go` 고정 | AI가 환경 진단 후 최적 방법 선택 |
+| 검증 실패 대응 | 실패 메시지만 표시 | 원인 분석 → 누락 파일 자동 생성 → 재검증 |
+| 버전 충돌 | 에러로 중단 | 버전 매니저로 격리 후 재시도 |
+| 신규 프레임워크 | 코드 수정 필요 | 명세만 바꾸면 됨 |
+
+**실제 검증 사례 (Go)**:
+- 강사 명세: "go 언어 수업을 위한 환경세팅"
+- AI 에이전트가 수행한 작업:
+  1. Homebrew 존재 확인 (격리 설치 가능)
+  2. `brew install go` 실행
+  3. `~/.zshrc`에 `GOPATH`, `PATH` 자동 추가
+  4. `go version` + `go run` + `go build` 검증
+- 결과: `go1.26.2 darwin/arm64` 설치 + 검증 통과
+
+**설치 완료 후**: OpenClaw + `~/.openclaw/`를 자동 삭제하여 학생 PC를 깨끗하게 유지.
 
 ---
 
@@ -312,33 +348,57 @@ memory/
 - DMG 안에 1개 파일만 노출 (앱 hidden)
 - **Rust 실제 설치 성공 (35.9초, rustc 1.94.1)**
 
+### Day 8-9 — Vercel 배포 및 DMG→ZIP 전환
+- Vercel MCP로 Next.js 웹 플랫폼 프로덕션 배포 (`sattle.vercel.app`)
+- Supabase Google OAuth 정식 활성화 + 리디렉트 URL 설정
+- **Vercel 서버리스에서 `hdiutil` 미지원 문제 발견** → JSZip 기반으로 전환
+- `.sattle.app` hidden + `sattle 설치.command` 단일 진입점 구조 유지
+- 공통 `SiteHeader` 컴포넌트 도입 + 세션 기반 네비게이션
+- FlutterFlow 히어로 섹션 참고해 3D 플립 애니메이션 + 배경 글로우 효과 추가
+
+### Day 10 — OpenClaw AI 에이전트 통합 (핵심 전환점)
+**전환점**: 하드코딩된 `brew install` 스크립트는 검증 실패 시 자동 복구가 불가능함을 인식 → AI 에이전트에 위임하는 방식으로 재설계
+
+전환된 작업:
+- SwiftUI 앱의 설치 로직 전면 재작성 (`InstallerViewModel.swift` 400+ 라인)
+- Node 22 + OpenClaw 설치를 단일 쉘 세션에서 실행 (nvm 환경 유실 방지)
+- `openclaw agent --local --agent main` 명령어 적용 (게이트웨이 없이 내장 모드)
+- AGENTS.md, SOUL.md, SKILL.md를 Swift 상수로 임베딩
+- `openclaw.json`을 Swift FileManager로 직접 작성 (heredoc 들여쓰기 파싱 오류 회피)
+- `/install/[code]` 페이지에 Supabase Realtime 구독 + 단계별 시각화
+- **REPLICA IDENTITY FULL** 설정으로 Realtime UPDATE 이벤트 전달 문제 해결
+- 설치 단계를 7단계에서 5단계로 재구성 (권한확인→환경진단→AI준비→환경세팅→정리)
+- **Go 실제 설치 + 검증 성공** (AI가 GOPATH 자동 설정 + go run/build 검증까지)
+
 ---
 
 ## 4. 기술 스택
 
 ### 백엔드 / 데이터
 - **Next.js 16.2.3** (App Router, Turbopack)
-- **Supabase** (PostgreSQL + Realtime + Auth + RLS)
+- **Supabase** (PostgreSQL + Realtime + Auth + RLS + Google OAuth)
 - **Anthropic Claude API** (수업 계획서 파싱)
+- **Vercel** (프로덕션 배포 - `sattle.vercel.app`)
 
 ### 프론트엔드
 - **React 19** + **TypeScript**
-- **Tailwind CSS** (다크 테마)
-- **Framer Motion** (스크롤 애니메이션)
+- **Tailwind CSS 4** (다크 테마)
+- **Framer Motion** (3D 플립 애니메이션, 그래디언트 흐름 효과)
 
 ### macOS 네이티브
 - **SwiftUI** (macOS 14+)
 - **Foundation** (Process API로 shell 명령 실행)
+- **OpenClaw** (npm 패키지 · AI 에이전트 런타임)
 
 ### 인프라 / 도구
-- **JSZip** (ZIP 패키징)
-- **hdiutil** (동적 DMG 생성)
+- **JSZip** (서버리스 환경용 동적 ZIP 패키징)
 - **xattr** (Quarantine 제거)
 - **codesign** (Ad-hoc 서명)
 
 ### MCP 통합
-- **Supabase MCP** — DB 운영 자동화
+- **Supabase MCP** — DB 운영 자동화 + RLS 디버깅 + Realtime 설정
 - **Playwright MCP** — E2E UI 검증
+- **Vercel MCP** — 프로덕션 배포 자동화
 
 ---
 
@@ -352,26 +412,33 @@ memory/
                                               │
                                               ▼
 ┌─────────────┐    ┌──────────────┐    ┌─────────────┐
-│   학생 UI   │───▶│ Download API │───▶│ sattle.dmg│
-│  (Next.js)  │    │ (동적 DMG)   │    │ + config    │
-└─────────────┘    └──────────────┘    └─────┬───────┘
-                                              │
-                                              ▼
-                                       ┌─────────────┐
-                                       │ sattle.app│
-                                       │  (SwiftUI)  │
-                                       └─────┬───────┘
-                                              │
-                                              ▼
-                                       ┌─────────────┐
-                                       │  실제 설치  │
-                                       │  (shell)    │
-                                       └─────┬───────┘
-                                              │
-                                              ▼
-                                       ┌─────────────┐
-                                       │ status API  │──▶ 강사 대시보드
-                                       │  (Realtime) │     실시간 반영
+│   학생 UI   │───▶│ Download API │───▶│  sattle.zip │
+│  (Next.js)  │    │  (JSZip 동적)│    │ + config    │
+└──────┬──────┘    └──────────────┘    └─────┬───────┘
+       │                                      │
+       │ Realtime                             ▼
+       │ 구독                          ┌─────────────┐
+       │                               │ sattle.app  │
+       │                               │  (SwiftUI)  │
+       │                               └─────┬───────┘
+       │                                     │ 에이전트 배치
+       │                                     ▼
+       │                               ┌─────────────┐
+       │                               │  OpenClaw   │
+       │                               │ AI 에이전트 │
+       │                               └─────┬───────┘
+       │                                     │ 자율 설치 + 검증 + 재시도
+       │                                     ▼
+       │                               ┌─────────────┐
+       │                               │  실제 설치  │
+       │                               │ (brew/pip/  │
+       │                               │  nvm/sdkman)│
+       │                               └─────┬───────┘
+       │                                     │
+       │                                     ▼
+       │                               ┌─────────────┐
+       └───── 실시간 반영 ◀────────────│ status API  │
+                                       │  (Realtime) │──▶ 강사 대시보드
                                        └─────────────┘
 ```
 
@@ -403,17 +470,14 @@ memory/
 
 **해결**: Production 빌드(`next build && next start`)로 운영. HMR 제거.
 
-### 6-5. 동적 DMG 생성
-**문제**: 학생마다 다른 spec_id, install_id, api_base_url을 DMG에 주입해야 함. 사전 빌드된 정적 DMG로는 불가능.
+### 6-5. 동적 패키징 (DMG → ZIP 전환)
+**문제 1**: 학생마다 다른 spec_id, install_id, api_base_url을 패키지에 주입해야 함. 사전 빌드된 정적 파일로는 불가능.
 
-**해결**: 다운로드 시점에 서버에서:
-1. 베이스 DMG 마운트
-2. 내용을 임시 디렉토리에 복사
-3. 학생별 `devsetup-config.json` 주입
-4. `hdiutil create`로 새 DMG 생성
-5. 응답 후 임시 파일 정리
+**문제 2**: 초기 구현은 `hdiutil`로 DMG를 동적 생성했으나, **Vercel 서버리스(Linux)에서 `hdiutil` 미지원** 발견 (macOS 전용 도구).
 
-소요 시간: 약 1-2초.
+**해결**: 베이스 `.app` 번들을 ZIP으로 사전 빌드 → 요청 시 `JSZip`으로 메모리에서 열어 `.sattle-config.json` + `sattle 설치.command` 주입 → 순수 JavaScript로 Linux 환경에서 동작. `.app` 번들은 `.sattle.app`으로 이름을 변경해 Finder 숨김 처리.
+
+소요 시간: 약 200-400ms.
 
 ### 6-6. RLS 정책 vs 익명 사용자
 **문제**: 학생은 로그인 없이 접속하는데 RLS가 `auth.uid()` 기반 INSERT를 차단.
@@ -424,6 +488,37 @@ memory/
 **문제**: ZIP 다운로드 응답에 한글 파일명을 넣으면 `ByteString` 변환 에러 (HTTP 헤더는 latin-1만 허용).
 
 **해결**: `filename*=UTF-8''<encoded>` 형식으로 RFC 5987 인코딩 사용.
+
+### 6-8. Supabase Realtime UPDATE 이벤트 미전달
+**문제**: 학생이 설치 진행 중인데 강사 대시보드가 업데이트되지 않음. `postgres_changes` 구독은 동작하는 것 같은데 UPDATE 이벤트가 클라이언트에 도달하지 않음.
+
+**해결**: PostgreSQL의 `REPLICA IDENTITY`가 `DEFAULT`(PK만 전송)로 되어 있어 Realtime이 변경된 row 데이터를 전달하지 못함을 발견. `ALTER TABLE installations REPLICA IDENTITY FULL`로 변경 → UPDATE 시 전체 row가 브로드캐스트됨.
+
+### 6-9. 하드코딩 설치 로직의 한계 → AI 에이전트 위임
+**문제**: 강사 명세의 검증 명령이 `go run hello.go`인데 `hello.go` 파일이 없어서 검증 실패. 하드코딩된 SwiftUI 설치 로직은 이런 상황에서 "검증 실패"만 표시할 뿐 자동 복구 불가.
+
+**해결**: SwiftUI 앱의 설치 로직을 전면 제거하고 OpenClaw AI 에이전트에 위임. AI가:
+1. 검증 실패 에러 메시지 분석
+2. `hello.go`가 없으면 자동으로 생성
+3. 재검증 실행
+4. 여전히 실패하면 원인을 추론해 다른 접근 시도
+
+결과: 하드코딩으로는 구현 불가능한 "맥락 기반 자동 복구"가 가능해짐.
+
+### 6-10. nvm 환경 쉘 간 유실
+**문제**: `runCommand`는 매번 새 쉘을 실행하므로, 이전 쉘에서 `nvm install 22`로 설치한 Node가 다음 쉘에서는 v20으로 보임. OpenClaw(Node 22+ 필수) 설치가 계속 실패.
+
+**해결**: Node 확인/설치 + OpenClaw 설치를 **단일 쉘 세션**에서 실행. 모든 OpenClaw 호출 전에 `. "$NVM_DIR/nvm.sh" && nvm use 22`를 선제적으로 실행.
+
+### 6-11. OpenClaw `openclaw agent` 명령어 모드 혼동
+**문제**: `openclaw agent --agent main --message "..."` 실행 시 `Error: Pass --to <E.164>, --session-id, or --agent to choose a session` 에러. 공식 문서에는 이렇게 쓰라고 되어 있는데 동작하지 않음.
+
+**해결**: `openclaw agent --help`로 직접 확인 → `--local` 플래그가 누락됨을 발견. 게이트웨이 데몬 없이 내장 모드로 실행하려면 `--local` 필수. 최종 명령어: `openclaw agent --local --agent main --message "..." --thinking high --timeout 600`.
+
+### 6-12. 헤더 인증 상태 로딩 시 레이아웃 시프트
+**문제**: 페이지 새로고침 시 `authReady`가 false인 동안 로그인 버튼이 없다가, 세션이 로드되면서 "강사 대시보드" + "로그아웃" 버튼이 갑자기 나타남 → 헤더가 흔들림.
+
+**해결**: auth 영역을 조건부 마운트 대신 `opacity-0 pointer-events-none → opacity-100` 전환으로 변경. 레이아웃은 처음부터 잡혀 있고 가시성만 페이드인.
 
 ---
 
@@ -500,17 +595,20 @@ Hello, world!
 
 ## 10. 향후 계획
 
-| 우선순위 | 항목 |
-|---------|------|
-| 1 | OAuth 인증 정식 활성화 (Google/GitHub Supabase 콘솔 설정) |
-| 2 | Polar 결제 연동 (월 구독제) |
-| 3 | Apple Developer Notarization (앱 더블클릭으로 즉시 실행) |
-| 4 | Windows 버전 (PowerShell + WSL2) |
-| 5 | 강사 클래스룸 (다중 명세 + 학생 그룹 관리) |
-| 6 | 에러 패턴 학습 (실패한 설치를 AI가 분석해서 다음 설치 개선) |
+| 우선순위 | 항목 | 상태 |
+|---------|------|------|
+| ✅ | OAuth 인증 정식 활성화 (Google Supabase 설정) | **완료 (Day 8)** |
+| ✅ | OpenClaw AI 에이전트 통합 (자율 복구) | **완료 (Day 10)** |
+| ✅ | Vercel 프로덕션 배포 | **완료** |
+| 1 | Polar 결제 연동 (월 구독제) | 미착수 |
+| 2 | Apple Developer Notarization (앱 더블클릭으로 즉시 실행) | 미착수 |
+| 3 | Windows 버전 (PowerShell + WSL2) | 미착수 |
+| 4 | 강사 클래스룸 (다중 명세 + 학생 그룹 관리) | 미착수 |
+| 5 | 환경 스냅샷 + 수업 종료 시 원복 (설치 로그 기반) | 검토 중 |
+| 6 | 에러 패턴 학습 (실패한 설치를 AI가 분석해서 다음 설치 개선) | 검토 중 |
 
 ---
 
 **작성**: Claude Code (Opus 4.6 1M context) + 사용자 페어 프로그래밍
-**총 개발 시간**: 약 1주일
-**최종 빌드 상태**: 모든 핵심 기능 동작 확인, 실제 Rust 환경 자동 설치 성공
+**총 개발 시간**: 약 10일
+**최종 빌드 상태**: 프로덕션 배포 (`sattle.vercel.app`), OpenClaw AI 에이전트 자율 설치 성공 (Rust 35.9초, Go 자동 복구 포함)
