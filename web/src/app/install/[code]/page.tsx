@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import SiteHeader from "@/components/SiteHeader";
 import { uuidv4 } from "@/lib/uuid";
 import type { Spec, Installation } from "@/lib/database.types";
+import { TriangleAlert, Ban } from "lucide-react";
 
 type SetupTool = {
   name: string;
@@ -223,7 +224,7 @@ export default function InstallPage({ params }: { params: Promise<{ code: string
               {/* 실행 가이드 — 강조 */}
               <div className="bg-gradient-to-br from-yellow-500/10 to-transparent border border-yellow-500/30 rounded-xl p-5 space-y-4 text-left">
                 <div className="flex items-center gap-2">
-                  <span className="text-xl">⚠️</span>
+                  <TriangleAlert className="w-5 h-5 text-yellow-400" strokeWidth={2} />
                   <div className="font-semibold text-yellow-400">
                     다운로드 후 실행 방법
                   </div>
@@ -249,7 +250,7 @@ export default function InstallPage({ params }: { params: Promise<{ code: string
                 </ol>
 
                 <div className="flex items-start gap-2 pt-2 border-t border-yellow-500/20">
-                  <span className="text-red-400 text-sm">❌</span>
+                  <Ban className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" strokeWidth={2} />
                   <div className="text-xs text-gray-400 leading-relaxed">
                     다른 파일을 실행하면 설치가 동작하지 않습니다.{" "}
                     <span className="text-yellow-300 font-semibold">반드시 .command 파일</span>을 실행해주세요.

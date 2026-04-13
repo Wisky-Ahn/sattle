@@ -7,6 +7,7 @@ import SiteHeader from "@/components/SiteHeader";
 import { FadeIn, FlipIn, ScaleIn } from "@/components/Animations";
 import { createSupabaseBrowser } from "@/lib/supabase-browser";
 import type { User } from "@supabase/supabase-js";
+import { FileText, WandSparkles, ChartLine } from "lucide-react";
 
 export default function DemoPage() {
   const [code, setCode] = useState("");
@@ -110,15 +111,17 @@ export default function DemoPage() {
           {/* 안내 카드 */}
           <div className="grid grid-cols-3 gap-4 pt-4">
             {[
-              { icon: "📋", title: "명세 업로드", desc: "AI가 수업 계획서를 분석합니다" },
-              { icon: "🛠️", title: "원클릭 설치", desc: "파일 실행으로 환경이 세팅됩니다" },
-              { icon: "📊", title: "실시간 확인", desc: "설치 상태를 바로 확인합니다" },
-            ].map((item, i) => (
+              { Icon: FileText, title: "명세 업로드", desc: "AI가 수업 계획서를 분석합니다" },
+              { Icon: WandSparkles, title: "원클릭 설치", desc: "파일 실행으로 환경이 세팅됩니다" },
+              { Icon: ChartLine, title: "실시간 확인", desc: "설치 상태를 바로 확인합니다" },
+            ].map(({ Icon, title, desc }, i) => (
               <ScaleIn key={i} delay={0.6 + i * 0.1}>
-                <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.04] text-center hover:bg-white/[0.04] hover:border-white/[0.08] transition-all">
-                  <div className="text-xl mb-2">{item.icon}</div>
-                  <div className="text-sm font-medium mb-1">{item.title}</div>
-                  <div className="text-xs text-gray-500">{item.desc}</div>
+                <div className="p-5 rounded-xl bg-white/[0.02] border border-white/[0.04] text-center hover:bg-white/[0.04] hover:border-white/[0.08] transition-all">
+                  <div className="w-10 h-10 mx-auto mb-3 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+                    <Icon className="w-5 h-5 text-blue-400" strokeWidth={1.75} />
+                  </div>
+                  <div className="text-sm font-medium mb-1">{title}</div>
+                  <div className="text-xs text-gray-500">{desc}</div>
                 </div>
               </ScaleIn>
             ))}
