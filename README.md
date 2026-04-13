@@ -7,11 +7,11 @@
 
 > **Production**: https://sattle.vercel.app
 
-## 데모 영상
+## 데모
 
-https://github.com/Wisky-Ahn/sattle/raw/main/docs/demo.mp4
+![sattle 데모](docs/demo.gif)
 
-> 영상이 재생되지 않으면 [여기서 다운로드](docs/demo.mp4)하여 시청할 수 있습니다.
+> 원본 영상: [docs/demo.mp4](docs/demo.mp4)
 
 ---
 
